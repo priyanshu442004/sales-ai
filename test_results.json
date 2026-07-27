@@ -1,0 +1,212 @@
+{
+  "latency_seconds": 179.41,
+  "count": 5,
+  "results": [
+    {
+      "name": "Australian Artificial Intelligence Industry Group",
+      "website": "https://www.australianindustrygroup.com.au/",
+      "summary": "We're the Australian Artificial Intelligence Industry Group (AAIIG), devoted to accelerating the growth, impact and trustworthiness of Australia's AI community.",
+      "linkedin_url": "https://www.linkedin.com/company/australian-artificial-intelligence-industry-group",
+      "slug": "australian-artificial-intelligence-industry-group",
+      "activity_signals": {
+        "hiring": {
+          "active": false,
+          "open_roles": []
+        },
+        "achievements": []
+      },
+      "decision_maker": {
+        "name": "Laura Ivonne H.",
+        "designation": "\ud83e\udeb7AI Enablement & Transformation Leader",
+        "company": null,
+        "linkedin_url": "https://www.linkedin.com/in/lauraivonneh",
+        "snippet": "I lead revenue strategy and operations for ANZ as strategic partner to the ANZ VP ... Australian Artificial Intelligence Industry Group Graphic. Board ...",
+        "email": null,
+        "phone": null,
+        "domain": null,
+        "website": null,
+        "source": "LinkedIn (SerpAPI)"
+      },
+      "contact_email": "workplaceadvice@australianindustrygroup.com.au",
+      "contact_phone": "+61 1300 556 677",
+      "address": "Level 5/441 St Kilda Rd, Melbourne VIC 3004, Australia",
+      "twitter_url": null,
+      "sources": [
+        "LinkedIn",
+        "Google Maps",
+        "Crunchbase"
+      ],
+      "employee_count_min": null,
+      "employee_count_max": null,
+      "size_range": null,
+      "revenue_range": null,
+      "revenue_band": null
+    },
+    {
+      "name": "Australian Artificial Intelligence Institute",
+      "website": "https://adelaideuni.edu.au/research/australian-institute-for-machine-learning/",
+      "summary": "AAII was a government-funded research & development lab for investigating and commercialising Artificial Intelligence. closed in 1999.",
+      "linkedin_url": "https://www.linkedin.com/company/australian-artificial-intelligence-institute",
+      "slug": "australian-artificial-intelligence-institute",
+      "activity_signals": {
+        "hiring": {
+          "active": false,
+          "open_roles": []
+        },
+        "achievements": []
+      },
+      "decision_maker": {
+        "name": "Anand Rao, PhD, MBA",
+        "designation": "Non-Executive Director",
+        "company": "Agent Oriented Software",
+        "linkedin_url": "https://www.linkedin.com/in/anandsrao",
+        "snippet": "Global Artificial Intelligence Lead | AI-Emtech Lead in Labs | Partner in Analytics Insights ... Non-Executive Director. Agent Oriented Software. 1997 - 2005 ...",
+        "email": null,
+        "phone": null,
+        "domain": null,
+        "website": null,
+        "source": "LinkedIn (SerpAPI)"
+      },
+      "contact_email": "aiml@adelaide.edu.au",
+      "contact_phone": "+61 8 8313 3051",
+      "address": "384/392 North Terrace, Adelaide SA 5000, Australia",
+      "twitter_url": "https://x.com/UTSAAII",
+      "sources": [
+        "LinkedIn",
+        "Google Maps",
+        "Twitter/X",
+        "Wellfound",
+        "Wikidata"
+      ],
+      "employee_count_min": null,
+      "employee_count_max": null,
+      "size_range": null,
+      "revenue_range": null,
+      "revenue_band": null
+    },
+    {
+      "name": "Women in AI Australia",
+      "website": "https://aiiw.org.au/",
+      "summary": "Women in AI (WAI) is a nonprofit organisation dedicated to promoting inclusive and beneficial AI for society.",
+      "linkedin_url": "https://www.linkedin.com/company/womeninai-australia",
+      "slug": "womeninai-australia",
+      "activity_signals": {
+        "hiring": {
+          "active": false,
+          "open_roles": []
+        },
+        "achievements": []
+      },
+      "decision_maker": {
+        "name": "Angela Kim",
+        "designation": "Head of Insights, Reporting and Data Analytics & AI",
+        "company": "AIA",
+        "linkedin_url": "https://www.linkedin.com/in/angela-kim-b3203a6b",
+        "snippet": "... Women in AI Australia Leader, Women in AI APAC Head | \u00b7 Experience: AIA ... Director Data Analytics & AI. Deloitte. Feb 2022 - Mar 2023 1 year 2 months.",
+        "email": null,
+        "phone": null,
+        "domain": null,
+        "website": null,
+        "source": "LinkedIn (SerpAPI)"
+      },
+      "contact_email": "info@aiiw.org.au",
+      "contact_phone": "+61 439 975 813",
+      "address": "Level 6/126 Wellington Parade, East Melbourne VIC 3002, Australia",
+      "twitter_url": null,
+      "sources": [
+        "LinkedIn",
+        "Google Maps",
+        "Crunchbase",
+        "Wellfound"
+      ],
+      "employee_count_min": null,
+      "employee_count_max": null,
+      "size_range": null,
+      "revenue_range": null,
+      "revenue_band": null
+    },
+    {
+      "name": "Insight Via Artificial Intelligence",
+      "website": "http://ivai.com.au/",
+      "summary": "Via Artificial Intelligence is an innovative Adelaide-based SME with extensive experience in research, development and deployment of Artificial Intelligence, ...",
+      "linkedin_url": "https://www.linkedin.com/company/insight-via-artificial-intelligence",
+      "slug": "insight-via-artificial-intelligence",
+      "activity_signals": {
+        "hiring": {
+          "active": false,
+          "open_roles": []
+        },
+        "achievements": []
+      },
+      "decision_maker": {
+        "name": "Dr. Zygmunt Szpak",
+        "designation": null,
+        "company": null,
+        "linkedin_url": "https://www.linkedin.com/in/dr-zygmunt-szpak",
+        "snippet": "Executive Director at Insight Via Artificial Intelligence \u00b7 In 2013, Zygmunt received his PhD degree in Computer Science from the University of Adelaide ...",
+        "email": null,
+        "phone": null,
+        "domain": null,
+        "website": null,
+        "source": "LinkedIn (SerpAPI)"
+      },
+      "contact_email": null,
+      "contact_phone": "+61 422 531 417",
+      "address": "Ste 3C, Level 3/60 Hindmarsh Sq, Adelaide SA 5000, Australia",
+      "twitter_url": "https://x.com/analyticsinme",
+      "sources": [
+        "LinkedIn",
+        "Google Maps",
+        "Twitter/X",
+        "Crunchbase",
+        "Wellfound"
+      ],
+      "employee_count_min": null,
+      "employee_count_max": null,
+      "size_range": null,
+      "revenue_range": null,
+      "revenue_band": null
+    },
+    {
+      "name": "The AI Industry Association of Australia",
+      "website": "https://www.aiia.com.au/",
+      "summary": "We an inclusive community open to all of Australia's AI practitioners from startups and enterprises to research institutions and government bodies that wish to ...",
+      "linkedin_url": "https://www.linkedin.com/company/the-ai-industry-association-of-australia",
+      "slug": "the-ai-industry-association-of-australia",
+      "activity_signals": {
+        "hiring": {
+          "active": false,
+          "open_roles": []
+        },
+        "achievements": []
+      },
+      "decision_maker": {
+        "name": "Kate Russell",
+        "designation": "Founder, hum[ai]n | AI works when people do",
+        "company": null,
+        "linkedin_url": "https://www.linkedin.com/in/katealexandrarussell",
+        "snippet": "The AI Industry Association of Australia (AIIAA) is a not-for-profit, member-funded organisation dedicated to advancing the responsible and innovative use of ...",
+        "email": null,
+        "phone": null,
+        "domain": null,
+        "website": null,
+        "source": "LinkedIn (SerpAPI)"
+      },
+      "contact_email": null,
+      "contact_phone": "+61 2 6281 9400",
+      "address": "Fl 10/550 Bourke St, Melbourne VIC 3000, Australia",
+      "twitter_url": null,
+      "sources": [
+        "LinkedIn",
+        "Google Maps",
+        "Crunchbase",
+        "Wellfound"
+      ],
+      "employee_count_min": null,
+      "employee_count_max": null,
+      "size_range": null,
+      "revenue_range": null,
+      "revenue_band": null
+    }
+  ]
+}

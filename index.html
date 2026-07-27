@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    <!-- SEO Meta Tags -->
+    <title>Sales-AI — B2B Sales Intelligence & Outbound Automation</title>
+    <meta name="description" content="Enterprise B2B sales intelligence and outbound automation platform. Sourcing, enrichment, scoring, and automated outreach with built-in human verification." />
+    
+    <!-- Google Fonts: Inter and Inter Tight -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:ital,wght@0,300..900;1,300..900&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap" rel="stylesheet">
+    
+    <!-- Dark Mode Initial Script to Prevent Flash -->
+    <script>
+      (function() {
+        const theme = localStorage.getItem('pipeline-theme') || 'light';
+        if (theme === 'dark') {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      })();
+    </script>
+  </head>
+  <body class="bg-bg-canvas text-text-primary font-sans antialiased">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

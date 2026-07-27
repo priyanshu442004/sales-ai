@@ -1,0 +1,103 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg-canvas: #F7F8FA;
+    --bg-surface: #FFFFFF;
+    --bg-surface-raised: #FFFFFF;
+    --border-subtle: #E5E7EB;
+    --border-default: #D7D9DE;
+    --text-primary: #14161A;
+    --text-secondary: #5B5F6B;
+    --text-tertiary: #8A8E99;
+    --brand-primary: #1F3D3A;
+    --brand-primary-hover: #16302D;
+    --brand-accent: #C8863A;
+    --status-success: #1E7F4D;
+    --status-success-bg: #E7F6EE;
+    --status-warning: #A6650B;
+    --status-warning-bg: #FDF3E2;
+    --status-danger: #B3261E;
+    --status-danger-bg: #FBE9E8;
+    --status-info: #2A5DB0;
+    --status-info-bg: #E9F0FC;
+  }
+
+  .dark {
+    --bg-canvas: #0B0E14;
+    --bg-surface: #131722;
+    --bg-surface-raised: #1A1F2C;
+    --border-subtle: #232838;
+    --border-default: #2C3242;
+    --text-primary: #EDEEF1;
+    --text-secondary: #9AA0AE;
+    --text-tertiary: #676D7C;
+    --brand-primary: #1F3D3A;
+    --brand-primary-hover: #16302D;
+    --brand-accent: #C8863A;
+    --status-success: #1E7F4D;
+    --status-success-bg: rgba(30, 127, 77, 0.15);
+    --status-warning: #A6650B;
+    --status-warning-bg: rgba(166, 101, 11, 0.15);
+    --status-danger: #B3261E;
+    --status-danger-bg: rgba(179, 38, 30, 0.15);
+    --status-info: #2A5DB0;
+    --status-info-bg: rgba(42, 93, 176, 0.15);
+  }
+
+  body {
+    @apply bg-bg-canvas text-text-primary font-sans antialiased;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading text-text-primary font-semibold tracking-tight;
+  }
+}
+
+/* Custom Scrollbar Styles */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-default);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-tertiary);
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Custom class for fade-in animations.
+   Deliberately opacity-only: a `transform` here (even a no-op
+   `translateY(0)` left behind by `animation-fill-mode: forwards`) makes
+   this element a containing block for any `position: fixed` descendant
+   — e.g. a Modal rendered inside a `.fade-in` page wrapper would then be
+   positioned relative to this element's box instead of the viewport,
+   and could render partially off-screen whenever the page is taller than
+   the viewport or scrolled. */
+.fade-in {
+  animation: fadeIn 0.2s ease-out forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
