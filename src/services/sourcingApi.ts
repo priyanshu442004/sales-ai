@@ -1,4 +1,4 @@
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000/api/v1';
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || '/api/v1';
 
 function getStoredToken(): string {
   return localStorage.getItem('sales_ai_token') || '';

@@ -532,7 +532,7 @@ initDatabase();
 // Simulates API network delay
 const delay = (ms: number = 500) => new Promise(res => setTimeout(res, ms));
 
-const BACKEND_URL = 'http://localhost:8000/api/v1';
+const BACKEND_URL = '/api/v1';
 
 async function fetchFromBackend(path: string, options: RequestInit = {}): Promise<any> {
   const token = localStorage.getItem('sales_ai_token');
