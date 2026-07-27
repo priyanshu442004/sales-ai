@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useUiStore } from '../store/useUiStore';
-import { Layers, Mail, Lock, ShieldCheck, ArrowRight } from 'lucide-react';
+import { Layers, Mail, Lock, ArrowRight } from 'lucide-react';
 import { Button } from '../components/ui/core';
 import { loginWithBackend } from '../services/sourcingApi';
 
@@ -14,12 +14,7 @@ const loginSchema = z.object({
   password: z.string().min(4, 'Password must be at least 4 characters long'), // allow 'admin'
 });
 
-const mfaSchema = z.object({
-  code: z.string().length(6, 'Verification code must be exactly 6 digits'),
-});
-
 type LoginFormValues = z.infer<typeof loginSchema>;
-type MfaFormValues = z.infer<typeof mfaSchema>;
 
 export const Login: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
