@@ -8,5 +8,18 @@ cd /var/www/company-scrapping && git checkout . && git pull origin main && npm r
 
 ---
 
-## 🛠️ Why `git checkout .` is Included
-`backend/app/serper_quota.json` is updated live at runtime on EC2 whenever search queries run. Running `git checkout .` discards temporary runtime file changes before pulling, preventing git merge conflicts.
+## 🐍 When Do You Need `pip install` or `alembic`?
+
+* **Standard code/UI updates (95% of deployments):** No need to reinstall python packages! The command above is all you need.
+* **If you added NEW Python packages to `requirements.txt`:**
+  ```bash
+  cd /var/www/company-scrapping/backend
+  source venv/bin/activate
+  pip install -r requirements.txt
+  ```
+* **If you added NEW database models/migrations:**
+  ```bash
+  cd /var/www/company-scrapping/backend
+  source venv/bin/activate
+  alembic upgrade head
+  ```
