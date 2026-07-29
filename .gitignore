@@ -29,6 +29,7 @@ backend/__pycache__
 backend/**/__pycache__
 backend/*.db
 backend/tests/test_salesai.db
+backend/app/serper_quota.json
 
 # Secrets — never commit API keys / credentials
 .env
