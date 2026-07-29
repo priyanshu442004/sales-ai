@@ -31,6 +31,7 @@ def format_job(job: ScrapeJob) -> dict:
             # not a fabricated 10-500 default.
             "sizeRange": [search.company_size_min, search.company_size_max],
             "revenueBands": search.revenue_bands or [],
+            "advancedFilters": search.advanced_filters or {},
         }
         job_name = search.name or f"Job #{job.id[:8]}"
     else:
@@ -43,6 +44,7 @@ def format_job(job: ScrapeJob) -> dict:
             "limit": 50,
             "sizeRange": [None, None],
             "revenueBands": [],
+            "advancedFilters": {},
         }
         job_name = f"Job #{job.id[:8]}"
 

@@ -77,7 +77,9 @@ class SavedSearchCreate(BaseModel):
     revenue_bands: List[str] = []
     advanced_filters: Dict[str, Any] = {}
     schedule: Dict[str, Any] = {}
-    search_mode: str = "individuals"  # individuals | companies
+    search_mode: str = "individuals"  # individuals | companies | proactive
+    proactive_keywords: List[str] = []
+    proactive_filter: str = "Posts"
 
 class SavedSearchResponse(BaseModel):
     id: str
@@ -95,6 +97,8 @@ class SavedSearchResponse(BaseModel):
     advanced_filters: Dict[str, Any]
     schedule: Dict[str, Any]
     search_mode: str = "individuals"
+    proactive_keywords: List[str] = []
+    proactive_filter: str = "Posts"
     created_at: datetime
 
     class Config:
@@ -338,10 +342,12 @@ class SearchEstimateRequest(BaseModel):
     cities: List[str] = []
     industries: List[str] = []
     designations: List[str] = []
-    search_mode: str = "individuals"  # individuals | companies
+    search_mode: str = "individuals"  # individuals | companies | proactive
     company_size_min: Optional[int] = None
     company_size_max: Optional[int] = None
     revenue_bands: List[str] = []
+    proactive_keywords: List[str] = []
+    proactive_filter: str = "Posts"
 
 class PreviewCompanySchema(BaseModel):
     name: str

@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Button, Card } from '../components/ui/core';
 import {
   SlidersHorizontal, Calendar, Play, Save, Trash2,
-  Database, AlertCircle, X, ChevronDown, Globe, MapPin
+  Database, AlertCircle, X, ChevronDown, Globe, MapPin,
+  Zap, Check
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Country, State, City } from 'country-state-city';
@@ -11,10 +12,31 @@ import { createSearch, deleteSearch, estimateSearch, listSearches, runSearch } f
 // Real, authoritative country → state → city dataset (ISO 3166 / geonames backed)
 const GLOBAL_COUNTRIES = Country.getAllCountries();
 
+const PROACTIVE_FILTER_OPTIONS = [
+  { id: 'Posts', name: 'Posts & Discussions', desc: 'Social posts, RFPs & buyer requests' },
+  { id: 'People', name: 'People / Contacts', desc: 'Individual professionals & decision makers' },
+  { id: 'Jobs', name: 'Jobs & Hiring', desc: 'Active job postings indicating buying demand' },
+  { id: 'Companies', name: 'Company Profiles', desc: 'Target corporate entities & businesses' },
+  { id: 'Groups', name: 'Groups & Communities', desc: 'Professional groups & niche communities' },
+  { id: 'Schools', name: 'Schools & Academies', desc: 'Educational institutions & training centers' },
+  { id: 'Events', name: 'Events & Trade Shows', desc: 'Exhibitions, conferences & event organizers' },
+  { id: 'Services', name: 'Services & Vendors', desc: 'Commercial & B2B service providers' },
+  { id: 'Products', name: 'Products & Suppliers', desc: 'Product listings & wholesale suppliers' },
+  { id: 'Directories', name: 'Directories & Chambers', desc: 'Chambers of commerce & business directories' },
+  { id: 'News', name: 'Press & News Releases', desc: 'Press releases & news announcements' },
+  { id: 'All', name: 'All 15 Intent Sources', desc: 'Search across all intent sources simultaneously' },
+];
+
 export const LeadSearch: React.FC = () => {
   // Individuals = find a specific targeted person; Companies = find whole
-  // company profiles instead, with no job-title filter.
-  const [searchMode, setSearchMode] = useState<'individuals' | 'companies'>('individuals');
+  // company profiles; Proactive = multi-keyword intent search across 15 web sources
+  const [searchMode, setSearchMode] = useState<'individuals' | 'companies' | 'proactive'>('individuals');
+
+  // Proactive Lead specific state
+  const [proactiveKeywords, setProactiveKeywords] = useState<string[]>(['event styling', 'wedding planner']);
+  const [keywordInput, setKeywordInput] = useState('');
+  const [proactiveFilter, setProactiveFilter] = useState<string>('Posts');
+  const [showProactiveFilterDropdown, setShowProactiveFilterDropdown] = useState(false);
 
   // Target parameter states
   const [countries, setCountries] = useState<string[]>(['United States', 'Canada']);
@@ -75,13 +97,21 @@ export const LeadSearch: React.FC = () => {
       const res = await listSearches();
       const formatted = (res || []).map((s: any) => {
         const paramsParts = [];
-        if (s.countries?.length) paramsParts.push(s.countries.join(', '));
-        if (s.industries?.length) paramsParts.push(s.industries.join(', '));
-        if (s.designations?.length) paramsParts.push(s.designations.join(', '));
-        if (s.company_size_min != null || s.company_size_max != null) {
-          paramsParts.push(`${s.company_size_min ?? 'Any'}-${s.company_size_max ?? 'Any'} employees`);
+        if (s.search_mode === 'proactive') {
+          const adv = s.advanced_filters || {};
+          const kws = adv.proactive_keywords || s.proactive_keywords || [];
+          const flt = adv.proactive_filter || s.proactive_filter || 'Posts';
+          if (kws.length) paramsParts.push(`Keywords: ${kws.join(', ')}`);
+          paramsParts.push(`Filter: ${flt}`);
+        } else {
+          if (s.countries?.length) paramsParts.push(s.countries.join(', '));
+          if (s.industries?.length) paramsParts.push(s.industries.join(', '));
+          if (s.designations?.length) paramsParts.push(s.designations.join(', '));
+          if (s.company_size_min != null || s.company_size_max != null) {
+            paramsParts.push(`${s.company_size_min ?? 'Any'}-${s.company_size_max ?? 'Any'} employees`);
+          }
+          if (s.revenue_bands?.length) paramsParts.push(s.revenue_bands.join(', '));
         }
-        if (s.revenue_bands?.length) paramsParts.push(s.revenue_bands.join(', '));
 
         let scheduleLabel = 'Run manually';
         if (s.schedule?.type === 'one-time' && s.schedule?.datetime) {
@@ -117,8 +147,12 @@ export const LeadSearch: React.FC = () => {
       return;
     }
     if (searchMode === 'companies' && sizeRangeError) {
-      // Don't burn a live SerpAPI probe on a filter that can never match.
       setMatchCount(null);
+      setPreviewCompanies([]);
+      return;
+    }
+    if (searchMode === 'proactive' && proactiveKeywords.length === 0) {
+      setMatchCount(0);
       setPreviewCompanies([]);
       return;
     }
@@ -138,6 +172,8 @@ export const LeadSearch: React.FC = () => {
           searchMode,
           sizeRange: searchMode === 'companies' ? [sizeMinNum, sizeMaxNum] : [null, null],
           revenueBands: searchMode === 'companies' ? revenueBands : [],
+          proactiveKeywords: searchMode === 'proactive' ? proactiveKeywords : [],
+          proactiveFilter: searchMode === 'proactive' ? proactiveFilter : 'Posts',
         });
         if (res) {
           setMatchCount(res.match_count);
@@ -151,7 +187,7 @@ export const LeadSearch: React.FC = () => {
     }, 500);
 
     return () => clearTimeout(delay);
-  }, [searchMode, countries, states, cities, industries, titles, customDesignation, customIndustry, sizeMin, sizeMax, revenueBands]);
+  }, [searchMode, countries, states, cities, industries, titles, customDesignation, customIndustry, sizeMin, sizeMax, revenueBands, proactiveKeywords, proactiveFilter]);
 
   // Enforce selection order: a state can't outlive its country, a city can't outlive its state.
   useEffect(() => {
@@ -171,6 +207,8 @@ export const LeadSearch: React.FC = () => {
     fundingStages,
     hiringSignal,
     requiredKeyword: requiredKeyword.trim(),
+    proactive_keywords: proactiveKeywords,
+    proactive_filter: proactiveFilter,
   });
 
   const handleRunSearch = async () => {
@@ -184,28 +222,38 @@ export const LeadSearch: React.FC = () => {
       toast.error('Minimum company size cannot be greater than maximum.');
       return;
     }
+    if (searchMode === 'proactive' && proactiveKeywords.length === 0) {
+      toast.error('Please add at least one proactive keyword to search.');
+      return;
+    }
 
     try {
-      toast.info('Starting your search — this runs in the background.');
+      toast.info('Starting proactive intent search — this runs in the background across 15 sources.');
       const finalTitles = customDesignation ? [...titles.filter(x => x !== 'Other'), customDesignation] : titles.filter(x => x !== 'Other');
       const finalIndustries = customIndustry ? [...industries.filter(x => x !== 'Other'), customIndustry] : industries.filter(x => x !== 'Other');
 
+      const searchName = searchMode === 'proactive'
+        ? `Proactive: ${proactiveKeywords.join(', ') || 'Keywords'} [${proactiveFilter}]`
+        : `Scrape Now: ${finalIndustries.join('/') || 'All Industries'}`;
+
       const createdSearch = await createSearch({
-        name: `Scrape Now: ${finalIndustries.join('/') || 'All Industries'}`,
+        name: searchName,
         countries,
         states,
         cities,
-        industries: finalIndustries,
-        titles: finalTitles,
+        industries: searchMode === 'proactive' ? [] : finalIndustries,
+        titles: searchMode === 'proactive' ? [] : finalTitles,
         limit: leadLimit,
         sizeRange: searchMode === 'companies' ? [sizeMinNum, sizeMaxNum] : [null, null],
         revenueBands: searchMode === 'companies' ? revenueBands : [],
         advancedFilters: buildAdvancedFilters(),
         schedule: {},
         searchMode,
+        proactiveKeywords: searchMode === 'proactive' ? proactiveKeywords : [],
+        proactiveFilter: searchMode === 'proactive' ? proactiveFilter : 'Posts',
       });
       await runSearch(createdSearch.id);
-      toast.success('Search queued — track its progress in the Job Queue.');
+      toast.success('Search queued — track progress in the Job Queue.');
     } catch (err: any) {
       toast.error(err.message || 'Failed to launch lead search.');
     }
@@ -229,15 +277,14 @@ export const LeadSearch: React.FC = () => {
       toast.error('Minimum company size cannot be greater than maximum.');
       return;
     }
+    if (searchMode === 'proactive' && proactiveKeywords.length === 0) {
+      toast.error('Please add at least one proactive keyword.');
+      return;
+    }
     setCountryError(false);
 
     let schedulePayload: { type: string; datetime?: string; recurrence?: string };
     if (scheduledDate) {
-      // Combine as local wall-clock time, then convert to a single
-      // unambiguous UTC instant (ISO with "Z") — this is what actually
-      // fixes the old bug where a bare "2026-07-18T14:30" string was
-      // compared directly against server UTC time, firing early/late
-      // depending on the user's timezone.
       const localDateTime = new Date(`${scheduledDate}T${scheduledTime}:00`);
       if (Number.isNaN(localDateTime.getTime())) {
         toast.error('Invalid date/time selected.');
@@ -256,19 +303,25 @@ export const LeadSearch: React.FC = () => {
       const finalTitles = customDesignation ? [...titles.filter(x => x !== 'Other'), customDesignation] : titles.filter(x => x !== 'Other');
       const finalIndustries = customIndustry ? [...industries.filter(x => x !== 'Other'), customIndustry] : industries.filter(x => x !== 'Other');
 
+      const searchName = searchMode === 'proactive'
+        ? `Scheduled Proactive: ${proactiveKeywords.join(', ')} [${proactiveFilter}]`
+        : `Scheduled Search: ${finalIndustries.join('/') || 'All Industries'}`;
+
       await createSearch({
-        name: `Scheduled Search: ${finalIndustries.join('/') || 'All Industries'}`,
+        name: searchName,
         countries,
         states,
         cities,
-        industries: finalIndustries,
-        titles: finalTitles,
+        industries: searchMode === 'proactive' ? [] : finalIndustries,
+        titles: searchMode === 'proactive' ? [] : finalTitles,
         limit: leadLimit,
         sizeRange: searchMode === 'companies' ? [sizeMinNum, sizeMaxNum] : [null, null],
         revenueBands: searchMode === 'companies' ? revenueBands : [],
         advancedFilters: buildAdvancedFilters(),
         schedule: schedulePayload,
         searchMode,
+        proactiveKeywords: searchMode === 'proactive' ? proactiveKeywords : [],
+        proactiveFilter: searchMode === 'proactive' ? proactiveFilter : 'Posts',
       });
       toast.success('Search schedule successfully configured — track it in the Jobs Queue "Scheduled" section.');
       setScheduledDate('');
@@ -291,23 +344,33 @@ export const LeadSearch: React.FC = () => {
       toast.error('Minimum company size cannot be greater than maximum.');
       return;
     }
+    if (searchMode === 'proactive' && proactiveKeywords.length === 0) {
+      toast.error('Please add at least one proactive keyword.');
+      return;
+    }
     try {
       const finalTitles = customDesignation ? [...titles.filter(x => x !== 'Other'), customDesignation] : titles.filter(x => x !== 'Other');
       const finalIndustries = customIndustry ? [...industries.filter(x => x !== 'Other'), customIndustry] : industries.filter(x => x !== 'Other');
 
+      const searchName = searchMode === 'proactive'
+        ? `Preset Proactive: ${proactiveKeywords.join(', ')} [${proactiveFilter}]`
+        : `Preset: ${finalIndustries.join('/') || 'All Industries'}`;
+
       await createSearch({
-        name: `Preset: ${finalIndustries.join('/') || 'All Industries'}`,
+        name: searchName,
         countries,
         states,
         cities,
-        industries: finalIndustries,
-        titles: finalTitles,
+        industries: searchMode === 'proactive' ? [] : finalIndustries,
+        titles: searchMode === 'proactive' ? [] : finalTitles,
         limit: leadLimit,
         sizeRange: searchMode === 'companies' ? [sizeMinNum, sizeMaxNum] : [null, null],
         revenueBands: searchMode === 'companies' ? revenueBands : [],
         advancedFilters: buildAdvancedFilters(),
         schedule: {},
         searchMode,
+        proactiveKeywords: searchMode === 'proactive' ? proactiveKeywords : [],
+        proactiveFilter: searchMode === 'proactive' ? proactiveFilter : 'Posts',
       });
       toast.success('Target parameters successfully saved to presets.');
       fetchSavedSearches();
@@ -327,7 +390,8 @@ export const LeadSearch: React.FC = () => {
   };
 
   const handleLoadPreset = (rawPreset: any) => {
-    setSearchMode(rawPreset.search_mode === 'companies' ? 'companies' : 'individuals');
+    const mode = rawPreset.search_mode === 'proactive' ? 'proactive' : rawPreset.search_mode === 'companies' ? 'companies' : 'individuals';
+    setSearchMode(mode);
     if (rawPreset.countries) setCountries(rawPreset.countries);
     if (rawPreset.states) setStates(rawPreset.states);
     if (rawPreset.cities) setCities(rawPreset.cities);
@@ -341,6 +405,8 @@ export const LeadSearch: React.FC = () => {
     if (advanced.fundingStages) setFundingStages(advanced.fundingStages);
     if (typeof advanced.hiringSignal === 'boolean') setHiringSignal(advanced.hiringSignal);
     if (typeof advanced.requiredKeyword === 'string') setRequiredKeyword(advanced.requiredKeyword);
+    if (Array.isArray(advanced.proactive_keywords)) setProactiveKeywords(advanced.proactive_keywords);
+    if (typeof advanced.proactive_filter === 'string') setProactiveFilter(advanced.proactive_filter);
     toast.success('Preset loaded.');
   };
 
@@ -443,7 +509,7 @@ export const LeadSearch: React.FC = () => {
 
           <div className="space-y-4">
 
-            {/* Individuals vs Companies search mode */}
+            {/* Individuals vs Companies vs Proactive search mode */}
             <div>
               <label className="block text-xs font-heading font-semibold text-text-secondary mb-2">What are you searching for?</label>
               <div className="inline-flex rounded-input border border-border-default overflow-hidden">
@@ -469,9 +535,23 @@ export const LeadSearch: React.FC = () => {
                 >
                   Companies
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setSearchMode('proactive')}
+                  className={`px-4 py-2 text-xs font-heading font-semibold transition border-l border-border-default flex items-center gap-1.5 ${
+                    searchMode === 'proactive'
+                      ? 'bg-brand-primary text-white font-bold'
+                      : 'bg-bg-surface text-text-secondary hover:bg-bg-canvas'
+                  }`}
+                >
+                  <Zap className="w-3.5 h-3.5" />
+                  Proactive Leads
+                </button>
               </div>
               <p className="text-[11px] text-text-tertiary mt-1.5">
-                {searchMode === 'companies'
+                {searchMode === 'proactive'
+                  ? 'Multi-keyword proactive discovery across 15 intent sources (Apollo, Serper Search, Maps, LinkedIn, Trade Shows, Malls, News & Directories). Mandatory email rule active.'
+                  : searchMode === 'companies'
                   ? 'Finds whole companies — name, website, summary, activity signals, and a decision-maker where one can genuinely be found. No job title needed.'
                   : 'Finds a specific person by job title, e.g. "VP of Sales".'}
               </p>
@@ -783,84 +863,221 @@ export const LeadSearch: React.FC = () => {
 
             </div>
 
-            {/* Target Industry taxonomy */}
-            <div>
-              <label className="block text-xs font-heading font-semibold text-text-secondary mb-2">Target Industries</label>
-              <div className="flex flex-wrap gap-1.5">
-                {presetIndustries.map(ind => {
-                  const selected = industries.includes(ind);
-                  return (
+            {/* Proactive Mode Configuration Panel */}
+            {searchMode === 'proactive' ? (
+              <div className="space-y-4 border border-border-default bg-bg-surface p-4 rounded-card">
+                {/* Keywords Tag Input */}
+                <div>
+                  <label className="block text-xs font-heading font-semibold text-text-secondary mb-1.5">
+                    Proactive Keywords / Intent Signals <span className="text-status-error">*</span>
+                  </label>
+                  {proactiveKeywords.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mb-2">
+                      {proactiveKeywords.map((kw, idx) => (
+                        <span key={idx} className="inline-flex items-center text-xs bg-brand-primary/10 text-brand-primary dark:text-emerald-300 border border-brand-primary/20 px-2.5 py-1 rounded-badge font-medium">
+                          <span>{kw}</span>
+                          <button
+                            type="button"
+                            onClick={() => setProactiveKeywords(proactiveKeywords.filter((_, i) => i !== idx))}
+                            className="ml-1.5 text-text-tertiary hover:text-text-primary transition"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={keywordInput}
+                      onChange={(e) => setKeywordInput(e.target.value)}
+                      placeholder="Type keyword (e.g. event styling, wedding planner, trade show) and press Enter..."
+                      className="px-3 py-1.5 w-full text-xs bg-bg-canvas border border-border-default rounded-input text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-primary"
+                      onKeyDown={(e) => {
+                        if ((e.key === 'Enter' || e.key === ',') && keywordInput.trim()) {
+                          e.preventDefault();
+                          const val = keywordInput.trim().replace(/,/g, '');
+                          if (val && !proactiveKeywords.includes(val)) {
+                            setProactiveKeywords([...proactiveKeywords, val]);
+                          }
+                          setKeywordInput('');
+                        }
+                      }}
+                    />
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        if (keywordInput.trim()) {
+                          const val = keywordInput.trim().replace(/,/g, '');
+                          if (val && !proactiveKeywords.includes(val)) {
+                            setProactiveKeywords([...proactiveKeywords, val]);
+                          }
+                          setKeywordInput('');
+                        }
+                      }}
+                      className="h-[32px] px-3 text-xs border-border-default text-text-secondary hover:bg-bg-canvas hover:text-text-primary"
+                    >
+                      Add Tag
+                    </Button>
+                  </div>
+
+                  {/* Preset Suggestions */}
+                  <div className="flex flex-wrap gap-1.5 mt-2.5">
+                    <span className="text-[10px] text-text-tertiary self-center mr-1">Suggestions:</span>
+                    {['Event Decor', 'Wedding Planner', 'Trade Show Exhibitor', 'Shopping Mall Manager', 'Hotel Resort', 'B2B Logistics'].map((sug) => (
+                      <button
+                        key={sug}
+                        type="button"
+                        onClick={() => {
+                          if (!proactiveKeywords.includes(sug)) {
+                            setProactiveKeywords([...proactiveKeywords, sug]);
+                          }
+                        }}
+                        className="text-[10px] px-2 py-0.5 rounded-badge bg-bg-surface hover:bg-brand-primary/10 text-text-secondary hover:text-text-primary border border-border-default hover:border-brand-primary/30 transition"
+                      >
+                        + {sug}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Filter Selector (Expandable Filter Options) */}
+                <div className="relative">
+                  <label className="block text-xs font-heading font-semibold text-text-secondary mb-1.5">
+                    Filter Option (Intent Type)
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowProactiveFilterDropdown(!showProactiveFilterDropdown)}
+                    className="w-full flex items-center justify-between px-3 py-2 text-xs bg-bg-canvas border border-border-default rounded-input text-text-primary hover:border-brand-primary/50 transition"
+                  >
+                    <span className="flex items-center gap-2">
+                      <SlidersHorizontal className="w-3.5 h-3.5 text-brand-primary dark:text-emerald-400" />
+                      <span className="font-semibold text-text-primary">
+                        {PROACTIVE_FILTER_OPTIONS.find(f => f.id === proactiveFilter)?.name || proactiveFilter}
+                      </span>
+                      <span className="text-[10px] text-text-tertiary">
+                        — {PROACTIVE_FILTER_OPTIONS.find(f => f.id === proactiveFilter)?.desc}
+                      </span>
+                    </span>
+                    <ChevronDown className="w-4 h-4 text-text-tertiary" />
+                  </button>
+
+                  {showProactiveFilterDropdown && (
+                    <>
+                      <div className="fixed inset-0 z-10" onClick={() => setShowProactiveFilterDropdown(false)} />
+                      <div className="absolute left-0 right-0 mt-1 max-h-64 overflow-y-auto bg-bg-surface border border-border-default rounded-card shadow-2xl z-20 p-1.5 divide-y divide-border-subtle">
+                        {PROACTIVE_FILTER_OPTIONS.map((opt) => (
+                          <button
+                            key={opt.id}
+                            type="button"
+                            onClick={() => {
+                              setProactiveFilter(opt.id);
+                              setShowProactiveFilterDropdown(false);
+                            }}
+                            className={`w-full flex items-center justify-between px-3 py-2 text-left rounded-input text-xs transition ${
+                              proactiveFilter === opt.id
+                                ? 'bg-brand-primary/10 text-text-primary font-semibold border border-brand-primary/30'
+                                : 'hover:bg-bg-canvas text-text-secondary'
+                            }`}
+                          >
+                            <div>
+                              <div className="font-medium text-text-primary">{opt.name}</div>
+                              <div className="text-[10px] text-text-tertiary">{opt.desc}</div>
+                            </div>
+                            {proactiveFilter === opt.id && (
+                              <span className="flex items-center gap-1 text-brand-primary dark:text-emerald-400 text-xs font-semibold">
+                                <Check className="w-3.5 h-3.5" /> Active
+                              </span>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            ) : (
+              /* Target Industry taxonomy — for Individuals and Companies modes */
+              <div>
+                <label className="block text-xs font-heading font-semibold text-text-secondary mb-2">Target Industries</label>
+                <div className="flex flex-wrap gap-1.5">
+                  {presetIndustries.map(ind => {
+                    const selected = industries.includes(ind);
+                    return (
+                      <button
+                        key={ind}
+                        type="button"
+                        onClick={() => {
+                          if (selected) setIndustries(industries.filter(x => x !== ind));
+                          else setIndustries([...industries, ind]);
+                        }}
+                        className={`text-xs px-2.5 py-1 rounded-badge border transition ${
+                          selected 
+                            ? 'bg-brand-primary text-white border-brand-primary font-medium'
+                            : 'bg-bg-surface hover:bg-bg-canvas text-text-secondary border-border-default'
+                        }`}
+                      >
+                        {ind}
+                      </button>
+                    );
+                  })}
+                  {/* Dynamically render custom added industries that are not in the presets */}
+                  {industries.filter(ind => !presetIndustries.includes(ind) && ind !== 'Other').map(ind => (
                     <button
                       key={ind}
                       type="button"
-                      onClick={() => {
-                        if (selected) setIndustries(industries.filter(x => x !== ind));
-                        else setIndustries([...industries, ind]);
-                      }}
-                      className={`text-xs px-2.5 py-1 rounded-badge border transition ${
-                        selected 
-                          ? 'bg-brand-primary text-white border-brand-primary font-medium'
-                          : 'bg-bg-surface hover:bg-bg-canvas text-text-secondary border-border-default'
-                      }`}
+                      onClick={() => setIndustries(industries.filter(x => x !== ind))}
+                      className="text-xs px-2.5 py-1 rounded-badge border bg-brand-primary text-white border-brand-primary font-medium transition flex items-center animate-in zoom-in-95 duration-100"
                     >
-                      {ind}
+                      <span>{ind}</span>
+                      <X className="w-3 h-3 ml-1.5" />
                     </button>
-                  );
-                })}
-                {/* Dynamically render custom added industries that are not in the presets */}
-                {industries.filter(ind => !presetIndustries.includes(ind) && ind !== 'Other').map(ind => (
-                  <button
-                    key={ind}
-                    type="button"
-                    onClick={() => setIndustries(industries.filter(x => x !== ind))}
-                    className="text-xs px-2.5 py-1 rounded-badge border bg-brand-primary text-white border-brand-primary font-medium transition flex items-center animate-in zoom-in-95 duration-100"
-                  >
-                    <span>{ind}</span>
-                    <X className="w-3 h-3 ml-1.5" />
-                  </button>
-                ))}
-              </div>
-
-              {/* Dynamic Other input for custom Industries */}
-              {industries.includes('Other') && (
-                <div className="flex gap-2 mt-2 max-w-md animate-in slide-in-from-top-1 duration-150">
-                  <input
-                    type="text"
-                    value={customIndustry}
-                    onChange={(e) => setCustomIndustry(e.target.value)}
-                    placeholder="Enter custom industry (e.g. EdTech, Logistics)..."
-                    className="px-3 py-1.5 w-full text-xs bg-bg-canvas border border-border-default rounded-input text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-primary"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && customIndustry.trim()) {
-                        e.preventDefault();
-                        if (!industries.includes(customIndustry.trim())) {
-                          setIndustries([...industries.filter(x => x !== 'Other'), customIndustry.trim()]);
-                        } else {
-                          setIndustries(industries.filter(x => x !== 'Other'));
-                        }
-                        setCustomIndustry('');
-                      }
-                    }}
-                  />
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      if (customIndustry.trim()) {
-                        if (!industries.includes(customIndustry.trim())) {
-                          setIndustries([...industries.filter(x => x !== 'Other'), customIndustry.trim()]);
-                        } else {
-                          setIndustries(industries.filter(x => x !== 'Other'));
-                        }
-                        setCustomIndustry('');
-                      }
-                    }}
-                    className="h-[32px] px-3 text-xs"
-                  >
-                    Add
-                  </Button>
+                  ))}
                 </div>
-              )}
-            </div>
+
+                {/* Dynamic Other input for custom Industries */}
+                {industries.includes('Other') && (
+                  <div className="flex gap-2 mt-2 max-w-md animate-in slide-in-from-top-1 duration-150">
+                    <input
+                      type="text"
+                      value={customIndustry}
+                      onChange={(e) => setCustomIndustry(e.target.value)}
+                      placeholder="Enter custom industry (e.g. EdTech, Logistics)..."
+                      className="px-3 py-1.5 w-full text-xs bg-bg-canvas border border-border-default rounded-input text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-primary"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && customIndustry.trim()) {
+                          e.preventDefault();
+                          if (!industries.includes(customIndustry.trim())) {
+                            setIndustries([...industries.filter(x => x !== 'Other'), customIndustry.trim()]);
+                          } else {
+                            setIndustries(industries.filter(x => x !== 'Other'));
+                          }
+                          setCustomIndustry('');
+                        }
+                      }}
+                    />
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        if (customIndustry.trim()) {
+                          if (!industries.includes(customIndustry.trim())) {
+                            setIndustries([...industries.filter(x => x !== 'Other'), customIndustry.trim()]);
+                          } else {
+                            setIndustries(industries.filter(x => x !== 'Other'));
+                          }
+                          setCustomIndustry('');
+                        }
+                      }}
+                      className="h-[32px] px-3 text-xs"
+                    >
+                      Add
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Designations / job titles — only applies to Individuals mode */}
             {searchMode === 'individuals' && (
@@ -1026,79 +1243,81 @@ export const LeadSearch: React.FC = () => {
               </div>
             )}
 
-            {/* Advanced Filters */}
-            <div className="border-t border-border-subtle pt-4">
-              <button
-                type="button"
-                onClick={() => setShowAdvanced(!showAdvanced)}
-                className="flex items-center text-xs text-text-secondary hover:text-text-primary font-heading font-semibold"
-              >
-                <SlidersHorizontal className="w-3.5 h-3.5 mr-1" />
-                {showAdvanced ? 'Hide Advanced Filters' : 'Show Advanced Filters'}
-              </button>
+            {/* Advanced Filters — Hidden in Proactive mode */}
+            {searchMode !== 'proactive' && (
+              <div className="border-t border-border-subtle pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowAdvanced(!showAdvanced)}
+                  className="flex items-center text-xs text-text-secondary hover:text-text-primary font-heading font-semibold"
+                >
+                  <SlidersHorizontal className="w-3.5 h-3.5 mr-1" />
+                  {showAdvanced ? 'Hide Advanced Filters' : 'Show Advanced Filters'}
+                </button>
 
-              {showAdvanced && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3 bg-bg-canvas p-4 rounded-card border border-border-subtle animate-in fade-in duration-150">
-                  <div className="space-y-3">
-                    <div>
-                      <span className="block text-xs font-heading font-semibold text-text-secondary mb-1">Funding Stages</span>
-                      <p className="text-[10px] text-text-tertiary mb-1.5">Added to your search terms to narrow results.</p>
-                      <div className="flex gap-2">
-                        {['Seed', 'Series A', 'Series B', 'Series C'].map(stg => {
-                          const has = fundingStages.includes(stg);
-                          return (
-                            <button
-                              key={stg}
-                              type="button"
-                              onClick={() => {
-                                if (has) setFundingStages(fundingStages.filter(s => s !== stg));
-                                else setFundingStages([...fundingStages, stg]);
-                              }}
-                              className={`text-[10px] px-2 py-1 rounded border ${has ? 'bg-bg-surface border-brand-primary text-brand-primary font-semibold' : 'border-border-default text-text-secondary'}`}
-                            >
-                              {stg}
-                            </button>
-                          );
-                        })}
+                {showAdvanced && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3 bg-bg-canvas p-4 rounded-card border border-border-subtle animate-in fade-in duration-150">
+                    <div className="space-y-3">
+                      <div>
+                        <span className="block text-xs font-heading font-semibold text-text-secondary mb-1">Funding Stages</span>
+                        <p className="text-[10px] text-text-tertiary mb-1.5">Added to your search terms to narrow results.</p>
+                        <div className="flex gap-2">
+                          {['Seed', 'Series A', 'Series B', 'Series C'].map(stg => {
+                            const has = fundingStages.includes(stg);
+                            return (
+                              <button
+                                key={stg}
+                                type="button"
+                                onClick={() => {
+                                  if (has) setFundingStages(fundingStages.filter(s => s !== stg));
+                                  else setFundingStages([...fundingStages, stg]);
+                                }}
+                                className={`text-[10px] px-2 py-1 rounded border ${has ? 'bg-bg-surface border-brand-primary text-brand-primary font-semibold' : 'border-border-default text-text-secondary'}`}
+                              >
+                                {stg}
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
+
+                      <label className="flex items-center text-xs text-text-secondary cursor-pointer mt-2">
+                        <input
+                          type="checkbox"
+                          checked={hiringSignal}
+                          onChange={(e) => setHiringSignal(e.target.checked)}
+                          className="mr-2 rounded border-border-default text-brand-primary focus:ring-brand-primary"
+                        />
+                        <span>Prioritize companies that mention active hiring</span>
+                      </label>
                     </div>
 
-                    <label className="flex items-center text-xs text-text-secondary cursor-pointer mt-2">
-                      <input
-                        type="checkbox"
-                        checked={hiringSignal}
-                        onChange={(e) => setHiringSignal(e.target.checked)}
-                        className="mr-2 rounded border-border-default text-brand-primary focus:ring-brand-primary"
-                      />
-                      <span>Prioritize companies that mention active hiring</span>
-                    </label>
-                  </div>
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-xs font-heading font-semibold text-text-secondary mb-1">Required Keyword</label>
+                        <input
+                          type="text"
+                          value={requiredKeyword}
+                          onChange={(e) => setRequiredKeyword(e.target.value)}
+                          placeholder="e.g. B2B, Remote, Security, AI..."
+                          className="px-2.5 py-1.5 w-full text-xs bg-bg-surface border border-border-default rounded-input text-text-primary focus:outline-none"
+                        />
+                      </div>
 
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block text-xs font-heading font-semibold text-text-secondary mb-1">Required Keyword</label>
-                      <input
-                        type="text"
-                        value={requiredKeyword}
-                        onChange={(e) => setRequiredKeyword(e.target.value)}
-                        placeholder="e.g. B2B, Remote, Security, AI..."
-                        className="px-2.5 py-1.5 w-full text-xs bg-bg-surface border border-border-default rounded-input text-text-primary focus:outline-none"
-                      />
+                      <label className="flex items-center text-xs text-text-tertiary cursor-not-allowed" title="Connect a CRM in Integrations to enable this filter">
+                        <input
+                          type="checkbox"
+                          checked={false}
+                          disabled
+                          className="mr-2 rounded border-border-default"
+                        />
+                        <span>Exclude existing CRM contacts — no CRM connected yet</span>
+                      </label>
                     </div>
-
-                    <label className="flex items-center text-xs text-text-tertiary cursor-not-allowed" title="Connect a CRM in Integrations to enable this filter">
-                      <input
-                        type="checkbox"
-                        checked={false}
-                        disabled
-                        className="mr-2 rounded border-border-default"
-                      />
-                      <span>Exclude existing CRM contacts — no CRM connected yet</span>
-                    </label>
                   </div>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            )}
 
             {/* Scheduling Options */}
             <div className="border-t border-border-subtle pt-4 space-y-3">

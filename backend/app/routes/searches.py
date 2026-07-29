@@ -426,6 +426,131 @@ async def _run_company_mode(db, search, job, extra_keywords, _append_log) -> int
     return inserted
 
 
+async def _run_proactive_mode(db, search, job, extra_keywords, _append_log) -> int:
+    """Proactive-mode scrape + insert — searches intent sources via Apollo and Serper,
+    enforcing mandatory email requirement."""
+    import asyncio
+    from app.scraper_real import scrape_proactive_leads
+
+    adv = search.advanced_filters or {}
+    keywords = adv.get("proactive_keywords") or search.industries or ["Lead Generation"]
+    filter_option = adv.get("proactive_filter") or "Posts"
+
+    _append_log(f"Starting proactive discovery for keywords: {', '.join(keywords)} (Filter: {filter_option})...")
+    _append_log("Searching Apollo.io, Serper API, LinkedIn, Maps, Directories, and Web Intent sources...")
+
+    existing_hashes = await _existing_lead_dedupe_hashes(db, search.workspace_id)
+
+    scraped_results = await scrape_proactive_leads(
+        keywords=keywords,
+        filter_option=filter_option,
+        count_target=search.lead_count_target or 10,
+        countries=search.countries or [],
+    )
+
+    _append_log(f"Discovered {len(scraped_results)} matching proactive leads with verified emails...")
+    _append_log("Saving leads to your workspace...")
+
+    source_breakdown: dict = {}
+    for r in scraped_results:
+        src = r.get("source", "Serper/Apollo API")
+        source_breakdown[src] = source_breakdown.get(src, 0) + 1
+    job.per_source_breakdown = source_breakdown
+    await db.commit()
+
+    await asyncio.sleep(0.5)
+
+    inserted = 0
+    for idx, r in enumerate(scraped_results):
+        email = r.get("email")
+        if not email:
+            # MANDATORY EMAIL REQUIREMENT
+            continue
+
+        comp_name = r.get("company") or "Target Entity"
+        person_name = r.get("full_name") or "Contact Representative"
+        designation = r.get("designation") or "Executive"
+        phone = r.get("phone") or None
+        website = r.get("website") or None
+        linkedin_url = r.get("linkedin_url") or ""
+        snippet = r.get("snippet") or f"Proactive intent lead matching keywords: {', '.join(keywords)}"
+
+        hash_val = _dedupe_hash(search.workspace_id, "proactive", email.lower().strip())
+        if hash_val in existing_hashes:
+            continue
+        existing_hashes.add(hash_val)
+
+        ts_key = DateNow()
+        comp_id = f"comp-pro-{ts_key}-{idx}"
+        dm_id = f"dm-pro-{ts_key}-{idx}"
+        lead_id = f"lead-pro-{ts_key}-{idx}"
+
+        comp = Company(
+            id=comp_id,
+            org_id=search.org_id,
+            workspace_id=search.workspace_id,
+            name=comp_name,
+            website=website,
+            industry=search.industries[0] if search.industries else "Proactive Lead",
+            summary_text=snippet,
+            linkedin_url=linkedin_url,
+            source_provider=r.get("source", "Proactive Search"),
+        )
+        db.add(comp)
+
+        contact = Contact(
+            id=dm_id,
+            company_id=comp_id,
+            full_name=person_name,
+            designation=designation,
+            email=email,
+            phone=phone,
+            linkedin_url=linkedin_url,
+            source_provider=r.get("source", "Proactive Search"),
+        )
+        db.add(contact)
+
+        lead = Lead(
+            id=lead_id,
+            org_id=search.org_id,
+            workspace_id=search.workspace_id,
+            company_id=comp_id,
+            contact_id=dm_id,
+            job_id=job.id,
+            status="new",
+            search_mode="proactive",
+            notes=f"Proactive Intent Lead [{filter_option}]: {snippet}",
+            dedupe_hash=hash_val,
+        )
+        db.add(lead)
+
+        score_val = r.get("score", 85)
+        factor_breakdown = {
+            "proactive_intent_match": 100,
+            "mandatory_email_verified": 100,
+            "filter_matched": 100,
+        }
+        score_obj = LeadScore(
+            lead_id=lead_id,
+            total_score=int(score_val),
+            tier="High" if score_val >= 80 else "Medium",
+            factor_breakdown=factor_breakdown,
+        )
+        db.add(score_obj)
+
+        inserted += 1
+        job.leads_found = inserted
+
+        if inserted % 3 == 0:
+            _append_log(f"Processed {inserted} of {len(scraped_results)} proactive leads...")
+            await db.commit()
+
+    if inserted > 0:
+        await db.commit()
+
+    return inserted
+
+
 # Background scraping pipeline — runs as a FastAPI BackgroundTask
 async def run_sourcing_pipeline(search_id: str, job_id: str, db_session_factory):
     async with db_session_factory() as db:
@@ -458,6 +583,10 @@ async def run_sourcing_pipeline(search_id: str, job_id: str, db_session_factory)
             countries_str = ", ".join(search.countries or []) or "any location"
             if search_mode == "companies":
                 _append_log(f"Looking for companies in {industries_str} ({countries_str})")
+            elif search_mode == "proactive":
+                adv = search.advanced_filters or {}
+                kw_str = ", ".join(adv.get("proactive_keywords", [])) or industries_str
+                _append_log(f"Running proactive search for keywords: {kw_str}")
             else:
                 titles_str = ", ".join(search.designations or []) or "any title"
                 _append_log(f"Looking for {titles_str} in {industries_str} ({countries_str})")
@@ -472,6 +601,8 @@ async def run_sourcing_pipeline(search_id: str, job_id: str, db_session_factory)
 
             if search_mode == "companies":
                 inserted = await _run_company_mode(db, search, job, extra_keywords, _append_log)
+            elif search_mode == "proactive":
+                inserted = await _run_proactive_mode(db, search, job, extra_keywords, _append_log)
             else:
                 inserted = await _run_individual_mode(db, search, job, extra_keywords, _append_log)
 
@@ -560,6 +691,12 @@ async def create_search(
     current_user: User = Depends(get_current_user),
     current_workspace: Workspace = Depends(get_current_workspace),
 ):
+    adv = dict(req.advanced_filters or {})
+    if req.proactive_keywords:
+        adv["proactive_keywords"] = req.proactive_keywords
+    if req.proactive_filter:
+        adv["proactive_filter"] = req.proactive_filter
+
     search = SavedSearch(
         org_id=current_user.org_id,
         workspace_id=current_workspace.id,
@@ -567,13 +704,13 @@ async def create_search(
         countries=req.countries,
         states=req.states,
         cities=req.cities,
-        industries=req.industries,
-        designations=req.designations,
+        industries=[] if req.search_mode == "proactive" else req.industries,
+        designations=[] if req.search_mode == "proactive" else req.designations,
         lead_count_target=req.lead_count_target,
         company_size_min=req.company_size_min,
         company_size_max=req.company_size_max,
         revenue_bands=req.revenue_bands,
-        advanced_filters=req.advanced_filters,
+        advanced_filters=adv,
         schedule=req.schedule,
         search_mode=req.search_mode or "individuals",
         created_by=current_user.id

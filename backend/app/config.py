@@ -37,6 +37,9 @@ class Settings:
     SERPER_API_KEY_1: str = os.getenv("SERPER_API_KEY_1", "")
     SERPER_API_KEY_2: str = os.getenv("SERPER_API_KEY_2", "")
 
+    # Apollo API Key (Org & Contact Intelligence)
+    APOLLO_API_KEY: str = os.getenv("APOLLO_API_KEY", "Rf3TVAeCoS8g-zWsoehS2g")
+
     # Groq — used ONLY as a text-extraction fallback when SerpAPI/regex
     # scraping can't find an email or phone on a company's own already-fetched
     # website text (e.g. an obfuscated "name [at] company [dot] com" format a

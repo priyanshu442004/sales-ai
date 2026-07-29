@@ -77,7 +77,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden">
+    <div className="fixed inset-0 z-[100] overflow-hidden">
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/40 backdrop-blur-xs" onClick={onClose} />
       <div className="absolute inset-y-0 right-0 pl-10 max-w-full flex">

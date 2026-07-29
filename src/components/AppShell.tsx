@@ -160,7 +160,7 @@ export const AppShell: React.FC = () => {
 
       {/* 1. LEFT SIDEBAR */}
       <aside 
-        className={`bg-bg-surface border-r border-border-subtle flex flex-col justify-between transition-all duration-300 z-40 shrink-0 ${
+        className={`bg-bg-surface border-r border-border-subtle flex flex-col justify-between transition-all duration-300 z-10 shrink-0 ${
           sidebarCollapsed ? 'w-16' : 'w-60'
         }`}
       >
@@ -287,7 +287,7 @@ export const AppShell: React.FC = () => {
       </aside>
 
       {/* 2. MAIN APP CONTAINER */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 relative z-20">
         
         {/* TOP BAR */}
         <header className="h-14 bg-bg-surface border-b border-border-subtle px-6 flex items-center justify-between shrink-0">

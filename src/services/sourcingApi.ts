@@ -139,8 +139,8 @@ export async function createSearch(payload: any): Promise<any> {
       states: payload.states || [],
       cities: payload.cities || [],
       industries: payload.industries || [],
-      // Companies mode doesn't target a specific title — never send stale titles for it.
-      designations: searchMode === 'companies' ? [] : (payload.titles || payload.designations || []),
+      // Companies/Proactive mode doesn't target a specific title — never send stale titles for it.
+      designations: searchMode === 'individuals' ? (payload.titles || payload.designations || []) : [],
       lead_count_target: payload.limit || payload.lead_count_target || 50,
       company_size_min: sizeMin,
       company_size_max: sizeMax,
@@ -148,6 +148,8 @@ export async function createSearch(payload: any): Promise<any> {
       advanced_filters: payload.advancedFilters || payload.advanced_filters || {},
       schedule: payload.schedule || {},
       search_mode: searchMode,
+      proactive_keywords: payload.proactiveKeywords || payload.proactive_keywords || [],
+      proactive_filter: payload.proactiveFilter || payload.proactive_filter || 'Posts',
     }),
   });
 }
@@ -182,11 +184,13 @@ export async function estimateSearch(payload: any): Promise<any> {
       states: payload.states || [],
       cities: payload.cities || [],
       industries: payload.industries || [],
-      designations: searchMode === 'companies' ? [] : (payload.titles || payload.designations || []),
+      designations: searchMode === 'individuals' ? (payload.titles || payload.designations || []) : [],
       search_mode: searchMode,
       company_size_min: sizeMin,
       company_size_max: sizeMax,
       revenue_bands: revenueBands,
+      proactive_keywords: payload.proactiveKeywords || payload.proactive_keywords || [],
+      proactive_filter: payload.proactiveFilter || payload.proactive_filter || 'Posts',
     }),
   });
 }

@@ -22,6 +22,11 @@ interface JobParameters {
   limit: number;
   sizeRange: (number | null)[];
   revenueBands: string[];
+  advancedFilters?: {
+    proactive_keywords?: string[];
+    proactive_filter?: string;
+    [key: string]: any;
+  };
 }
 
 type JobStatus = 'Queued' | 'Running' | 'Completed' | 'Partial' | 'Failed';
@@ -31,7 +36,7 @@ interface LiveJob {
   search_id?: string;
   name: string;
   status: JobStatus;
-  searchMode: 'individuals' | 'companies';
+  searchMode: 'individuals' | 'companies' | 'proactive';
   startedAt: string;
   completedAt?: string;
   duration?: string;
@@ -73,7 +78,7 @@ const ALL_STATUSES: JobStatus[] = ['Queued', 'Running', 'Completed', 'Partial', 
 interface ScheduledSearch {
   id: string;
   name: string;
-  search_mode: 'individuals' | 'companies';
+  search_mode: 'individuals' | 'companies' | 'proactive';
   countries: string[];
   industries: string[];
   designations: string[];
@@ -95,7 +100,7 @@ export const Jobs: React.FC = () => {
 
   // Filters
   const [statusFilter, setStatusFilter] = useState<Set<JobStatus>>(new Set());
-  const [modeFilter, setModeFilter] = useState<'all' | 'individuals' | 'companies'>('all');
+  const [modeFilter, setModeFilter] = useState<'all' | 'individuals' | 'companies' | 'proactive'>('all');
   const [showFilters, setShowFilters] = useState(false);
 
   // Multi-select for bulk actions
@@ -122,7 +127,7 @@ export const Jobs: React.FC = () => {
       const normalized = (data?.data || []).map((job: any) => ({
         ...job,
         status: job.status || 'Queued',
-        searchMode: job.searchMode === 'companies' ? 'companies' : 'individuals',
+        searchMode: job.searchMode === 'proactive' ? 'proactive' : job.searchMode === 'companies' ? 'companies' : 'individuals',
         startedAt: job.startedAt || new Date().toISOString(),
         duration: job.duration || null,
         logs: Array.isArray(job.logs) ? job.logs : [],
@@ -136,6 +141,7 @@ export const Jobs: React.FC = () => {
           limit: Number(job.parameters?.limit || 50),
           sizeRange: job.parameters?.sizeRange || [null, null],
           revenueBands: job.parameters?.revenueBands || [],
+          advancedFilters: job.parameters?.advancedFilters || {},
         },
         progress: {
           scraped: Number(job.progress?.scraped || job.leadsFound || 0),
@@ -679,15 +685,30 @@ export const Jobs: React.FC = () => {
                       </div>
                     </td>
                     <td className="p-4">
-                      <Badge variant={s.search_mode === 'companies' ? 'info' : 'neutral'} className="capitalize">{s.search_mode}</Badge>
+                      <Badge variant={s.search_mode === 'proactive' ? 'accent' : s.search_mode === 'companies' ? 'info' : 'neutral'} className="capitalize">
+                        {s.search_mode === 'proactive' ? 'Proactive' : s.search_mode}
+                      </Badge>
                     </td>
                     <td className="p-4 text-text-secondary">
-                      <span className="block truncate max-w-xs">
-                        {[...(s.countries || []), ...(s.industries || [])].filter(Boolean).join(' · ') || '—'}
-                      </span>
-                      <span className="text-[10px] text-text-tertiary block mt-0.5">
-                        {(s.designations || []).join(', ') || '—'}
-                      </span>
+                      {s.search_mode === 'proactive' ? (
+                        <>
+                          <span className="block truncate max-w-xs font-medium text-text-primary">
+                            {(s.countries || []).join(' · ') || 'Global'}
+                          </span>
+                          <span className="text-[10px] text-text-tertiary block mt-0.5">
+                            Keywords: {s.name.includes(': ') ? s.name.split(': ')[1].split(' [')[0] : 'Proactive Intent'}
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="block truncate max-w-xs">
+                            {[...(s.countries || []), ...(s.industries || [])].filter(Boolean).join(' · ') || '—'}
+                          </span>
+                          <span className="text-[10px] text-text-tertiary block mt-0.5">
+                            {(s.designations || []).join(', ') || '—'}
+                          </span>
+                        </>
+                      )}
                     </td>
                     <td className="p-4 text-text-secondary font-heading">{scheduleLabel(s.schedule)}</td>
                     <td className="p-4 text-right space-x-1.5">
@@ -742,7 +763,7 @@ export const Jobs: React.FC = () => {
           <div>
             <span className="block text-[10px] font-heading font-semibold text-text-tertiary uppercase tracking-wider mb-1.5">Search type</span>
             <div className="inline-flex rounded-input border border-border-default overflow-hidden">
-              {(['all', 'individuals', 'companies'] as const).map(mode => (
+              {(['all', 'individuals', 'companies', 'proactive'] as const).map(mode => (
                 <button
                   key={mode}
                   type="button"
@@ -873,15 +894,32 @@ export const Jobs: React.FC = () => {
                       </div>
                     </td>
                     <td className="p-4">
-                      <Badge variant={job.searchMode === 'companies' ? 'info' : 'neutral'} className="capitalize">{job.searchMode}</Badge>
+                      <Badge variant={job.searchMode === 'proactive' ? 'accent' : job.searchMode === 'companies' ? 'info' : 'neutral'} className="capitalize">
+                        {job.searchMode === 'proactive' ? 'Proactive' : job.searchMode}
+                      </Badge>
                     </td>
                     <td className="p-4 text-text-secondary">
-                      <span className="block truncate max-w-xs">
-                        {[...(job.parameters?.countries || []), ...(job.parameters?.industries || [])].filter(Boolean).join(' · ') || '—'}
-                      </span>
-                      <span className="text-[10px] text-text-tertiary block mt-0.5">
-                        {(job.parameters?.titles || []).join(', ') || '—'}
-                      </span>
+                      {job.searchMode === 'proactive' ? (
+                        <>
+                          <span className="block truncate max-w-xs font-medium text-text-primary">
+                            {(job.parameters?.countries || []).join(' · ') || 'Global'}
+                          </span>
+                          <span className="text-[10px] text-text-tertiary block mt-0.5">
+                            Keywords: {job.parameters?.advancedFilters?.proactive_keywords?.length 
+                              ? job.parameters.advancedFilters.proactive_keywords.join(', ') 
+                              : (job.name.includes(': ') ? job.name.split(': ')[1].split(' [')[0] : 'Proactive Intent')}
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="block truncate max-w-xs">
+                            {[...(job.parameters?.countries || []), ...(job.parameters?.industries || [])].filter(Boolean).join(' · ') || '—'}
+                          </span>
+                          <span className="text-[10px] text-text-tertiary block mt-0.5">
+                            {(job.parameters?.titles || []).join(', ') || '—'}
+                          </span>
+                        </>
+                      )}
                     </td>
                     <td className="p-4"><StatusBadge status={job.status} /></td>
                     <td className="p-4">
@@ -961,6 +999,7 @@ export const Jobs: React.FC = () => {
         {selectedJob && (() => {
           const p = selectedJob.parameters;
           const isCompanyMode = selectedJob.searchMode === 'companies';
+          const isProactiveMode = selectedJob.searchMode === 'proactive';
           const industryStr = p?.industries?.length ? p.industries.join(', ') : 'any industry';
           const subLocation = [...(p?.states || []), ...(p?.cities || [])].join(', ');
           const locationStr = p?.countries?.length
@@ -970,7 +1009,12 @@ export const Jobs: React.FC = () => {
             ? ` · ${p?.sizeRange?.[0] ?? 'Any'}-${p?.sizeRange?.[1] ?? 'Any'} employees`
             : '';
           const revenueStr = isCompanyMode && p?.revenueBands?.length ? ` · ${p.revenueBands.join(', ')}` : '';
-          const criteriaStr = isCompanyMode
+          const proactiveKeywordsStr = p?.advancedFilters?.proactive_keywords?.length
+            ? p.advancedFilters.proactive_keywords.join(', ')
+            : (selectedJob.name.includes(': ') ? selectedJob.name.split(': ')[1].split(' [')[0] : 'Proactive Intent');
+          const criteriaStr = isProactiveMode
+            ? `Proactive Leads · Keywords: ${proactiveKeywordsStr} · ${locationStr}`
+            : isCompanyMode
             ? `Companies · ${industryStr} · ${locationStr}${sizeStr}${revenueStr}`
             : `${p?.titles?.length ? p.titles.join(', ') : 'any title'} · ${industryStr} · ${locationStr}`;
           const resultNoun = isCompanyMode ? 'companies' : 'leads';
