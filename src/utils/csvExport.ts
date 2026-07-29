@@ -10,7 +10,7 @@ export interface CsvLead {
   activitySignals: string[];
 }
 
-export function buildCSVRows(leads: CsvLead[], mode: 'individuals' | 'companies'): string[][] {
+export function buildCSVRows(leads: CsvLead[], mode: 'individuals' | 'companies' | 'proactive' | string): string[][] {
   if (mode === 'companies') {
     return [
       ['Company Name', 'Website', 'Summary', 'Activity', 'Decision Maker', 'Designation', 'Phone', 'Email', 'Company LinkedIn', 'Decision Maker LinkedIn', 'Score'],

@@ -54,7 +54,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 // BADGE / PILL
 // ==========================================
 interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
-  variant?: 'success' | 'warning' | 'danger' | 'info' | 'neutral' | 'high' | 'medium' | 'low';
+  variant?: 'success' | 'warning' | 'danger' | 'info' | 'neutral' | 'high' | 'medium' | 'low' | 'accent';
 }
 
 export const Badge: React.FC<BadgeProps> = ({ variant = 'neutral', className, children, ...props }) => {
@@ -68,6 +68,7 @@ export const Badge: React.FC<BadgeProps> = ({ variant = 'neutral', className, ch
           'bg-status-danger-bg text-status-danger': variant === 'danger',
           'bg-status-info-bg text-status-info': variant === 'info',
           'bg-bg-canvas text-text-secondary border border-border-subtle': variant === 'neutral',
+          'bg-brand-accent/15 text-brand-accent border border-brand-accent/25': variant === 'accent',
           // Priority tags mapping from §2.2
           'bg-status-danger-bg text-status-danger border border-status-danger/25': variant === 'high',
           'bg-status-warning-bg text-status-warning border border-status-warning/25': variant === 'medium',
